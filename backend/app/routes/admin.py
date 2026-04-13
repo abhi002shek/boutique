@@ -1,7 +1,7 @@
 import os
 import uuid
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Header
-from typing import Optional
+from typing import Optional, List
 from app.services.supabase_client import supabase
 
 router = APIRouter()
@@ -22,19 +22,20 @@ async def add_saree(
     description: str = Form(""),
     care: str = Form("Dry clean only"),
     available: bool = Form(True),
-    image: UploadFile = File(...),
+    images: List[UploadFile] = File(...),
     authorization: str = Header(...)
 ):
     verify_admin(authorization)
     try:
-        image_bytes = await image.read()
-        filename = f"{uuid.uuid4()}.jpg"
-        supabase.storage.from_("saree-images").upload(
-            filename,
-            image_bytes,
-            {"content-type": image.content_type}
-        )
-        image_url = supabase.storage.from_("saree-images").get_public_url(filename)
+        image_urls = []
+        for image in images:
+            image_bytes = await image.read()
+            filename = f"{uuid.uuid4()}.jpg"
+            supabase.storage.from_("saree-images").upload(
+                filename, image_bytes, {"content-type": image.content_type}
+            )
+            image_urls.append(supabase.storage.from_("saree-images").get_public_url(filename))
+
         res = supabase.table("sarees").insert({
             "name": name,
             "fabric": fabric,
@@ -44,7 +45,8 @@ async def add_saree(
             "description": description,
             "care": care,
             "available": available,
-            "image_url": image_url
+            "image_url": image_urls[0],
+            "image_urls": image_urls
         }).execute()
         return {"success": True, "saree": res.data[0]}
     except Exception as e:

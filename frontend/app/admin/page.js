@@ -64,7 +64,7 @@ export default function AdminPage() {
     try {
       const formData = new FormData()
       Object.entries(form).forEach(([k, v]) => formData.append(k, v))
-      formData.append('image', images[0])
+      images.forEach(img => formData.append('images', img))
 
       const res = await fetch(`${API}/admin/sarees`, {
         method: 'POST',

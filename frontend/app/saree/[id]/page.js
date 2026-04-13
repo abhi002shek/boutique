@@ -7,6 +7,7 @@ export default function SareeDetail() {
   const { id } = useParams()
   const [saree, setSaree] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [selectedImg, setSelectedImg] = useState(0)
   const [fullscreen, setFullscreen] = useState(false)
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export default function SareeDetail() {
   )
 
   const whatsappMsg = `Hi! I am interested in the ${saree.name} saree priced at Rs ${saree.price}. Is it available?`
-  const whatsappUrl = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP}?text=${whatsappMsg.split(' ').join('%20')}`
+  const whatsappUrl = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP}?text=${encodeURIComponent(whatsappMsg)}`
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '3rem 2rem' }}>
@@ -48,28 +49,46 @@ export default function SareeDetail() {
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'start' }}>
-        {/* Image with fullscreen */}
+        {/* Image gallery */}
         <div>
-          <div
-            onClick={() => saree.image_url && setFullscreen(true)}
-            style={{ aspectRatio: '3/4', background: '#F0E4D0', overflow: 'hidden', cursor: saree.image_url ? 'zoom-in' : 'default', position: 'relative' }}
-          >
-            {saree.image_url ? (
-              <img src={saree.image_url} alt={saree.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem' }}>🥻</div>
-            )}
-            {saree.image_url && (
-              <div style={{
-                position: 'absolute', bottom: '0.75rem', right: '0.75rem',
-                background: 'rgba(0,0,0,0.5)', color: '#fff',
-                padding: '0.3rem 0.7rem', fontSize: '0.7rem', borderRadius: 4,
-                letterSpacing: '0.05em'
-              }}>
-                🔍 Click to zoom
-              </div>
-            )}
-          </div>
+          {(() => {
+            const imgs = saree.image_urls?.length ? saree.image_urls : (saree.image_url ? [saree.image_url] : [])
+            const current = imgs[selectedImg]
+            return (
+              <>
+                <div
+                  onClick={() => current && setFullscreen(true)}
+                  style={{ aspectRatio: '3/4', background: '#F0E4D0', overflow: 'hidden', cursor: current ? 'zoom-in' : 'default', position: 'relative' }}
+                >
+                  {current ? (
+                    <img src={current} alt={saree.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem' }}>🥻</div>
+                  )}
+                  {current && (
+                    <div style={{
+                      position: 'absolute', bottom: '0.75rem', right: '0.75rem',
+                      background: 'rgba(0,0,0,0.5)', color: '#fff',
+                      padding: '0.3rem 0.7rem', fontSize: '0.7rem', borderRadius: 4, letterSpacing: '0.05em'
+                    }}>🔍 Click to zoom</div>
+                  )}
+                </div>
+                {imgs.length > 1 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                    {imgs.map((url, i) => (
+                      <div key={i} onClick={() => setSelectedImg(i)} style={{
+                        width: 64, height: 80, overflow: 'hidden', cursor: 'pointer',
+                        border: i === selectedImg ? '2px solid #C9A84C' : '1px solid rgba(201,168,76,0.2)',
+                        opacity: i === selectedImg ? 1 : 0.7, transition: 'all 0.2s'
+                      }}>
+                        <img src={url} alt={`${saree.name} ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )
+          })()}
         </div>
 
         {/* Details */}
@@ -128,40 +147,44 @@ export default function SareeDetail() {
       </div>
 
       {/* Fullscreen modal */}
-      {fullscreen && (
-        <div
-          onClick={() => setFullscreen(false)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.93)',
-            zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'zoom-out', padding: '2rem'
-          }}
-        >
-          <img
-            src={saree.image_url}
-            alt={saree.name}
-            style={{ maxHeight: '90vh', maxWidth: '90vw', objectFit: 'contain' }}
-            onClick={e => e.stopPropagation()}
-          />
-          <button
+      {fullscreen && (() => {
+        const imgs = saree.image_urls?.length ? saree.image_urls : (saree.image_url ? [saree.image_url] : [])
+        const current = imgs[selectedImg]
+        return (
+          <div
             onClick={() => setFullscreen(false)}
             style={{
-              position: 'fixed', top: '1.5rem', right: '1.5rem',
-              background: 'rgba(255,255,255,0.15)', color: '#fff',
-              border: '1px solid rgba(255,255,255,0.3)',
-              width: 44, height: 44, borderRadius: '50%',
-              fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
-              alignItems: 'center', justifyContent: 'center'
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.93)',
+              zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'zoom-out', padding: '2rem'
             }}
-          >✕</button>
-          <p style={{
-            position: 'fixed', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
-            color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', letterSpacing: '0.1em'
-          }}>
-            Press ESC or click outside to close
-          </p>
-        </div>
-      )}
+          >
+            <img
+              src={current}
+              alt={saree.name}
+              style={{ maxHeight: '90vh', maxWidth: '90vw', objectFit: 'contain' }}
+              onClick={e => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setFullscreen(false)}
+              style={{
+                position: 'fixed', top: '1.5rem', right: '1.5rem',
+                background: 'rgba(255,255,255,0.15)', color: '#fff',
+                border: '1px solid rgba(255,255,255,0.3)',
+                width: 44, height: 44, borderRadius: '50%',
+                fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
+                alignItems: 'center', justifyContent: 'center'
+              }}
+            >✕</button>
+            <p style={{
+              position: 'fixed', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
+              color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', letterSpacing: '0.1em'
+            }}>
+              Press ESC or click outside to close
+            </p>
+          </div>
+        )
+      })()}
     </div>
   )
 }
