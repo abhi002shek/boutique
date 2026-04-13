@@ -2,8 +2,6 @@
 import { useState } from 'react'
 
 const API = process.env.NEXT_PUBLIC_API_URL
-
-const FABRICS = ['Silk', 'Cotton', 'Georgette', 'Chiffon', 'Banarasi', 'Linen', 'Net']
 const OCCASIONS = ['Wedding', 'Festival', 'Casual', 'Office', 'Party']
 
 export default function AdminPage() {
@@ -12,11 +10,11 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState('')
 
   const [form, setForm] = useState({
-    name: '', fabric: 'Silk', occasion: 'Wedding',
+    name: '', fabric: '', occasion: 'Wedding',
     price: '', colors: '', description: '', care: 'Dry clean only', available: true
   })
-  const [image, setImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
+  const [images, setImages] = useState([])
+  const [imagePreviews, setImagePreviews] = useState([])
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(null)
   const [error, setError] = useState(null)
@@ -26,16 +24,11 @@ export default function AdminPage() {
   const handleLogin = async () => {
     setLoginError('')
     try {
-      const res = await fetch(`${API}/admin/sarees`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${password}` },
-      })
-      if (res.status === 401) {
-        setLoginError('Wrong password. Try again.')
-        return
+      const res = await fetch(`${API}/sarees/`)
+      if (res.ok) {
+        setLoggedIn(true)
+        loadSarees()
       }
-      setLoggedIn(true)
-      loadSarees()
     } catch {
       setLoggedIn(true)
       loadSarees()
@@ -45,23 +38,23 @@ export default function AdminPage() {
   const loadSarees = async () => {
     setLoadingSarees(true)
     try {
-      const res = await fetch(`${API}/sarees`)
+      const res = await fetch(`${API}/sarees/`)
       const data = await res.json()
       setSarees(data)
     } catch {}
     setLoadingSarees(false)
   }
 
-  const handleImage = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    setImage(file)
-    setImagePreview(URL.createObjectURL(file))
+  const handleImages = (e) => {
+    const files = Array.from(e.target.files)
+    if (!files.length) return
+    setImages(files)
+    setImagePreviews(files.map(f => URL.createObjectURL(f)))
   }
 
   const handleSubmit = async () => {
-    if (!form.name || !form.price || !image) {
-      setError('Please fill all required fields and upload an image.')
+    if (!form.name || !form.price || !form.fabric || !images.length) {
+      setError('Please fill all required fields and upload at least one image.')
       return
     }
     setLoading(true)
@@ -71,7 +64,7 @@ export default function AdminPage() {
     try {
       const formData = new FormData()
       Object.entries(form).forEach(([k, v]) => formData.append(k, v))
-      formData.append('image', image)
+      formData.append('image', images[0])
 
       const res = await fetch(`${API}/admin/sarees`, {
         method: 'POST',
@@ -80,7 +73,7 @@ export default function AdminPage() {
       })
 
       if (res.status === 401) {
-        setError('Session expired. Please refresh and login again.')
+        setError('Wrong password.')
         return
       }
 
@@ -90,12 +83,12 @@ export default function AdminPage() {
         return
       }
 
-      setSuccess('Saree added successfully! 🎉')
-      setForm({ name: '', fabric: 'Silk', occasion: 'Wedding', price: '', colors: '', description: '', care: 'Dry clean only', available: true })
-      setImage(null)
-      setImagePreview(null)
+      setSuccess('Saree added successfully!')
+      setForm({ name: '', fabric: '', occasion: 'Wedding', price: '', colors: '', description: '', care: 'Dry clean only', available: true })
+      setImages([])
+      setImagePreviews([])
       loadSarees()
-    } catch (e) {
+    } catch {
       setError('Failed to add saree. Check your connection.')
     }
     setLoading(false)
@@ -125,17 +118,14 @@ export default function AdminPage() {
     } catch {}
   }
 
-  // Login screen
   if (!loggedIn) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF6F0' }}>
       <div style={{ background: '#fff', padding: '3rem', border: '1px solid rgba(201,168,76,0.2)', width: 360, textAlign: 'center' }}>
         <p style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', color: '#C9A84C', marginBottom: '0.5rem' }}>✦ Trisha Admin</p>
         <p style={{ color: '#7A5C4A', fontSize: '0.85rem', marginBottom: '2rem' }}>Enter your admin password</p>
         <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
+          type="password" placeholder="Password"
+          value={password} onChange={e => setPassword(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleLogin()}
           style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid rgba(201,168,76,0.3)', marginBottom: '1rem', fontSize: '0.9rem', background: 'transparent' }}
         />
@@ -143,14 +133,11 @@ export default function AdminPage() {
         <button onClick={handleLogin} style={{
           width: '100%', padding: '0.85rem', background: '#C9A84C', color: '#fff',
           border: 'none', fontSize: '0.85rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer'
-        }}>
-          Login
-        </button>
+        }}>Login</button>
       </div>
     </div>
   )
 
-  // Admin dashboard
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '3rem 2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
@@ -175,10 +162,8 @@ export default function AdminPage() {
             <input style={inputStyle} type="number" placeholder="e.g. 4500" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
           </div>
           <div>
-            <label style={labelStyle}>Fabric *</label>
-            <select style={inputStyle} value={form.fabric} onChange={e => setForm({...form, fabric: e.target.value})}>
-              {FABRICS.map(f => <option key={f}>{f}</option>)}
-            </select>
+            <label style={labelStyle}>Fabric * (type freely)</label>
+            <input style={inputStyle} placeholder="e.g. Pure Banarasi Silk, Soft Cotton..." value={form.fabric} onChange={e => setForm({...form, fabric: e.target.value})} />
           </div>
           <div>
             <label style={labelStyle}>Occasion *</label>
@@ -201,24 +186,32 @@ export default function AdminPage() {
           <textarea style={{...inputStyle, height: 80, resize: 'vertical'}} placeholder="Describe the saree..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
         </div>
 
-        {/* Image upload */}
         <div style={{ marginBottom: '1.5rem' }}>
-          <label style={labelStyle}>Saree Photo *</label>
-          <div style={{ display: 'grid', gridTemplateColumns: imagePreview ? '1fr 120px' : '1fr', gap: '1rem', alignItems: 'start' }}>
-            <label style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              border: '1px dashed rgba(201,168,76,0.4)', padding: '2rem', cursor: 'pointer', background: 'rgba(201,168,76,0.02)'
-            }}>
-              <input type="file" accept="image/*" onChange={handleImage} style={{ display: 'none' }} />
-              <span style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📸</span>
-              <span style={{ fontSize: '0.8rem', color: '#7A5C4A' }}>{imagePreview ? 'Click to change photo' : 'Click to upload saree photo'}</span>
-            </label>
-            {imagePreview && (
-              <div style={{ width: 120, height: 160, overflow: 'hidden', border: '1px solid rgba(201,168,76,0.2)' }}>
-                <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            )}
-          </div>
+          <label style={labelStyle}>Saree Photos * (can select multiple)</label>
+          <label style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            border: '1px dashed rgba(201,168,76,0.4)', padding: '2rem', cursor: 'pointer',
+            background: 'rgba(201,168,76,0.02)', marginBottom: '1rem'
+          }}>
+            <input type="file" accept="image/*" multiple onChange={handleImages} style={{ display: 'none' }} />
+            <span style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📸</span>
+            <span style={{ fontSize: '0.8rem', color: '#7A5C4A' }}>
+              {imagePreviews.length ? `${imagePreviews.length} photo(s) selected — click to change` : 'Click to upload saree photos'}
+            </span>
+            <span style={{ fontSize: '0.75rem', color: '#C9A84C', marginTop: '0.3rem' }}>You can select multiple photos at once</span>
+          </label>
+          {imagePreviews.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {imagePreviews.map((src, i) => (
+                <div key={i} style={{ position: 'relative' }}>
+                  <div style={{ width: 90, height: 120, overflow: 'hidden', border: i === 0 ? '2px solid #C9A84C' : '1px solid rgba(201,168,76,0.2)' }}>
+                    <img src={src} alt={`Preview ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  {i === 0 && <span style={{ fontSize: '0.6rem', color: '#C9A84C', display: 'block', textAlign: 'center', marginTop: '0.2rem' }}>Main photo</span>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {error && <p style={{ color: '#c0392b', fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</p>}
@@ -273,9 +266,7 @@ export default function AdminPage() {
                     padding: '0.4rem 0.75rem', fontSize: '0.75rem',
                     border: '1px solid rgba(231,76,60,0.3)', color: '#e74c3c',
                     background: 'transparent', cursor: 'pointer'
-                  }}>
-                    Delete
-                  </button>
+                  }}>Delete</button>
                 </div>
               </div>
             ))}
