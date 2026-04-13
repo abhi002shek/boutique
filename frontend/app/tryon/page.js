@@ -52,11 +52,14 @@ function TryOnContent() {
         method: 'POST',
         body: formData
       })
-      if (!res.ok) throw new Error('Try-on failed')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.detail || 'Try-on failed')
+      }
       const data = await res.json()
       setResult(data.result_url)
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
