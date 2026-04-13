@@ -2,30 +2,25 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
-const FILTERS = {
-  fabric: ['All', 'Silk', 'Cotton', 'Georgette', 'Chiffon', 'Banarasi'],
-  occasion: ['All', 'Wedding', 'Festival', 'Casual', 'Office'],
-}
+const OCCASIONS = ['All', 'Wedding', 'Festival', 'Casual', 'Office', 'Party']
 
 export default function Home() {
   const [sarees, setSarees] = useState([])
   const [loading, setLoading] = useState(true)
-  const [fabric, setFabric] = useState('All')
   const [occasion, setOccasion] = useState('All')
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/sarees`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/sarees/`)
       .then(r => r.json())
       .then(data => { setSarees(data); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
   const filtered = sarees.filter(s => {
-    const matchFabric = fabric === 'All' || s.fabric === fabric
     const matchOccasion = occasion === 'All' || s.occasion === occasion
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase())
-    return matchFabric && matchOccasion && matchSearch
+    return matchOccasion && matchSearch
   })
 
   return (
@@ -37,7 +32,6 @@ export default function Home() {
         padding: '4rem 2rem', position: 'relative', overflow: 'hidden',
         background: 'linear-gradient(160deg, #FAF6F0 0%, #F0E4D0 50%, #FAF6F0 100%)'
       }}>
-        {/* Decorative circles */}
         <div style={{ position: 'absolute', top: '10%', left: '5%', width: 300, height: 300, borderRadius: '50%', border: '1px solid rgba(201,168,76,0.1)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: 200, height: 200, borderRadius: '50%', border: '1px solid rgba(201,168,76,0.15)', pointerEvents: 'none' }} />
 
@@ -55,14 +49,14 @@ export default function Home() {
           <a href="#collection" style={{
             background: '#C9A84C', color: '#fff', padding: '0.85rem 2rem',
             fontSize: '0.85rem', letterSpacing: '0.1em', textTransform: 'uppercase',
-            border: 'none', cursor: 'pointer', transition: 'background 0.2s'
+            border: 'none', cursor: 'pointer'
           }}>
             Browse Collection
           </a>
           <Link href="/tryon" style={{
             background: 'transparent', color: '#C9A84C', padding: '0.85rem 2rem',
             fontSize: '0.85rem', letterSpacing: '0.1em', textTransform: 'uppercase',
-            border: '1px solid rgba(201,168,76,0.4)', transition: 'border-color 0.2s'
+            border: '1px solid rgba(201,168,76,0.4)'
           }}>
             Virtual Try-On
           </Link>
@@ -88,18 +82,7 @@ export default function Home() {
             }}
           />
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {FILTERS.fabric.map(f => (
-              <button key={f} onClick={() => setFabric(f)} style={{
-                padding: '0.5rem 1rem', fontSize: '0.8rem', letterSpacing: '0.05em',
-                border: '1px solid', transition: 'all 0.2s', cursor: 'pointer',
-                borderColor: fabric === f ? '#C9A84C' : 'rgba(201,168,76,0.25)',
-                background: fabric === f ? '#C9A84C' : 'transparent',
-                color: fabric === f ? '#fff' : '#7A5C4A'
-              }}>{f}</button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {FILTERS.occasion.map(o => (
+            {OCCASIONS.map(o => (
               <button key={o} onClick={() => setOccasion(o)} style={{
                 padding: '0.5rem 1rem', fontSize: '0.8rem', letterSpacing: '0.05em',
                 border: '1px solid', transition: 'all 0.2s', cursor: 'pointer',
@@ -141,7 +124,6 @@ function SareeCard({ saree }) {
       onMouseLeave={() => setHovered(false)}
       style={{ cursor: 'pointer', transition: 'transform 0.3s', transform: hovered ? 'translateY(-4px)' : 'none' }}
     >
-      {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden', background: '#F0E4D0', marginBottom: '1rem' }}>
         {saree.image_url ? (
           <img src={saree.image_url} alt={saree.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s', transform: hovered ? 'scale(1.04)' : 'scale(1)' }} />
@@ -150,7 +132,6 @@ function SareeCard({ saree }) {
             🥻
           </div>
         )}
-        {/* Overlay buttons */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           background: 'linear-gradient(transparent, rgba(26,10,0,0.7))',
@@ -174,7 +155,6 @@ function SareeCard({ saree }) {
             Try On
           </Link>
         </div>
-        {/* Badge */}
         {!saree.available && (
           <div style={{
             position: 'absolute', top: '1rem', right: '1rem',
@@ -186,7 +166,6 @@ function SareeCard({ saree }) {
         )}
       </div>
 
-      {/* Info */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.3rem' }}>
           <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.05rem', fontWeight: 400, color: '#1A0A00', flex: 1 }}>
