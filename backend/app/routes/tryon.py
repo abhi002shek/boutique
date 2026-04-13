@@ -40,13 +40,13 @@ async def virtual_tryon(
 
         print("Calling /tryon API...")
         result = gr_client.predict(
-            vton_img=handle_file(person_path),
-            garm_img=handle_file(garment_path),
-            garment_des="A woman wearing a beautiful Indian saree",
-            is_checked=True,
-            is_checked_crop=False,
-            denoise_steps=30,
-            seed=42,
+            {"background": handle_file(person_path), "layers": [], "composite": None},
+            handle_file(garment_path),
+            "A woman wearing a beautiful Indian saree",
+            True,
+            False,
+            30,
+            42,
             api_name="/tryon"
         )
 
