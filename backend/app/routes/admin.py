@@ -46,7 +46,7 @@ async def add_saree(
             "care": care,
             "available": available,
             "image_url": image_urls[0],
-            "image_urls": image_urls
+            "images": image_urls
         }).execute()
         return {"success": True, "saree": res.data[0]}
     except Exception as e:

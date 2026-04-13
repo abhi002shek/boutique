@@ -52,7 +52,7 @@ export default function SareeDetail() {
         {/* Image gallery */}
         <div>
           {(() => {
-            const imgs = saree.image_urls?.length ? saree.image_urls : (saree.image_url ? [saree.image_url] : [])
+            const imgs = saree.images?.length ? saree.images : (saree.image_url ? [saree.image_url] : [])
             const current = imgs[selectedImg]
             return (
               <>
@@ -148,7 +148,7 @@ export default function SareeDetail() {
 
       {/* Fullscreen modal */}
       {fullscreen && (() => {
-        const imgs = saree.image_urls?.length ? saree.image_urls : (saree.image_url ? [saree.image_url] : [])
+        const imgs = saree.images?.length ? saree.images : (saree.image_url ? [saree.image_url] : [])
         const current = imgs[selectedImg]
         return (
           <div
