@@ -36,7 +36,7 @@ async def virtual_tryon(
             garment_path = tmp2.name
 
         print(f"Connecting to IDM-VTON with token: {bool(HF_TOKEN)}")
-        gr_client = Client("yisol/IDM-VTON", headers={"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else {})
+        gr_client = Client("yisol/IDM-VTON")
 
         print("Calling /tryon API...")
         result = gr_client.predict(
