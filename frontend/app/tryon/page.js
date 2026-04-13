@@ -119,9 +119,9 @@ function TryOnContent() {
             letterSpacing: '0.1em', textTransform: 'uppercase',
             cursor: loading ? 'not-allowed' : 'pointer'
           }}>
-            {loading ? '✦ Processing... (30-60 sec)' : '✦ Generate Try-On'}
+            {loading ? '✦ Processing... (1-3 min)' : '✦ Generate Try-On'}
           </button>
-          {loading && <p style={{ color: '#7A5C4A', fontSize: '0.8rem', marginTop: '1rem' }}>AI is draping the saree on your photo. Please wait...</p>}
+          {loading && <p style={{ color: '#7A5C4A', fontSize: '0.8rem', marginTop: '1rem' }}>AI is draping the saree on your photo. This can take 1–3 minutes depending on queue...</p>}
           {error && <p style={{ color: '#c0392b', fontSize: '0.85rem', marginTop: '1rem' }}>{error}</p>}
         </div>
       )}
@@ -137,7 +137,7 @@ function TryOnContent() {
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             {selectedSareeData && (
               <a
-                href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP}?text=Hi! I tried on this saree virtually and I love it! Is it available?`}
+                href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP}?text=${encodeURIComponent(`Hi! I tried on the ${selectedSareeData?.name} saree virtually and I love it! Is it available?`)}`}
                 target="_blank" rel="noopener noreferrer"
                 style={{
                   padding: '0.85rem 2rem', background: '#C9A84C', color: '#fff',

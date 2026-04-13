@@ -1,12 +1,14 @@
 import os
 import base64
 import tempfile
-from fastapi import APIRouter, File, UploadFile, Form, HTTPException
-from app.services.supabase_client import supabase
-from gradio_client import Client, handle_file
 import httpx
+from fastapi import APIRouter, File, UploadFile, Form, HTTPException
+from gradio_client import Client, handle_file
+from app.services.supabase_client import supabase
 
 router = APIRouter()
+
+HF_TOKEN = os.environ.get("HF_TOKEN")
 
 @router.post("/")
 async def virtual_tryon(
@@ -15,46 +17,50 @@ async def virtual_tryon(
 ):
     try:
         res = supabase.table("sarees").select("image_url, name").eq("id", saree_id).single().execute()
-        if not res.data:
-            raise HTTPException(status_code=404, detail="Saree not found")
+        if not res.data or not res.data.get("image_url"):
+            raise HTTPException(status_code=404, detail="Saree not found or has no image")
 
         saree_image_url = res.data["image_url"]
-        if not saree_image_url:
-            raise HTTPException(status_code=400, detail="Saree has no image")
 
+        # Save person photo to temp file
         photo_bytes = await photo.read()
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             tmp.write(photo_bytes)
-            tmp_path = tmp.name
+            person_path = tmp.name
 
+        # Download saree image to temp file
         async with httpx.AsyncClient(timeout=30) as client:
             saree_res = await client.get(saree_image_url)
-            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp2:
-                tmp2.write(saree_res.content)
-                saree_path = tmp2.name
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp2:
+            tmp2.write(saree_res.content)
+            garment_path = tmp2.name
 
-        print("Calling CatVTON...")
-        gr_client = Client("zhengchong/CatVTON")
+        gr_client = Client("yisol/IDM-VTON", hf_token=HF_TOKEN)
 
         result = gr_client.predict(
-            handle_file(tmp_path),
-            handle_file(saree_path),
-            "upper",
-            api_name="/submit"
+            dict(background=handle_file(person_path), layers=[], composite=None),  # person image (ImageEditor)
+            handle_file(garment_path),   # garment image
+            "A woman wearing a beautiful Indian saree",  # garment description
+            True,    # is_checked (use auto-mask)
+            True,    # is_checked_crop
+            30,      # denoising steps
+            42,      # seed
+            api_name="/tryon"
         )
 
-        print("Result:", result)
-        result_image_path = result if isinstance(result, str) else result[0]
+        # result is (image_path, masked_image_path)
+        result_image_path = result[0] if isinstance(result, (list, tuple)) else result
 
         with open(result_image_path, "rb") as f:
-            img_bytes = f.read()
-        img_b64 = base64.b64encode(img_bytes).decode()
-        result_url = f"data:image/png;base64,{img_b64}"
+            img_b64 = base64.b64encode(f.read()).decode()
 
-        return {"result_url": result_url, "saree_name": res.data["name"]}
+        return {
+            "result_url": f"data:image/png;base64,{img_b64}",
+            "saree_name": res.data["name"]
+        }
 
     except HTTPException:
         raise
     except Exception as e:
-        print("Full error:", str(e))
+        print("Tryon error:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
